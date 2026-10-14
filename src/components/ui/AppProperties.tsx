@@ -107,6 +107,7 @@ export enum Invokes {
   UpdateWgpuTransform = 'update_wgpu_transform',
   OpenViewerWindow = 'open_viewer_window',
   CloseViewerWindow = 'close_viewer_window',
+  RedrawViewerWindow = 'redraw_viewer_window',
   GetViewerInfo = 'get_viewer_info',
   GetViewerFrame = 'get_viewer_frame',
   UpdateExifFields = 'update_exif_fields',

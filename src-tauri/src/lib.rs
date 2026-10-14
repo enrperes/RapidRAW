@@ -2345,6 +2345,7 @@ pub fn run() {
             update_wgpu_transform,
             viewer_window::open_viewer_window,
             viewer_window::close_viewer_window,
+            viewer_window::redraw_viewer_window,
             viewer_window::get_viewer_info,
             viewer_window::get_viewer_frame,
             android_integration::resolve_android_content_uri_name,

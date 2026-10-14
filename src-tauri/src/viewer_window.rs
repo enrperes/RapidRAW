@@ -272,6 +272,13 @@ pub async fn close_viewer_window(app_handle: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn redraw_viewer_window(window: tauri::Window) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || crate::gpu_processing::redraw_display(&window))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn get_viewer_info(app_handle: AppHandle, state: tauri::State<AppState>) -> ViewerInfo {
     ViewerInfo {
         native: load_settings(app_handle)

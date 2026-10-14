@@ -115,9 +115,13 @@ impl WgpuDisplay {
     }
 
     pub fn resize(&mut self, device: &wgpu::Device, size: tauri::PhysicalSize<u32>) {
-        self.config.width = size.width.max(1);
-        self.config.height = size.height.max(1);
-        self.surface.configure(device, &self.config);
+        let width = size.width.max(1);
+        let height = size.height.max(1);
+        if width != self.config.width || height != self.config.height {
+            self.config.width = width;
+            self.config.height = height;
+            self.surface.configure(device, &self.config);
+        }
         self.fit_to_surface();
     }
 
@@ -415,6 +419,16 @@ pub fn create_window_surface(
 }
 
 pub fn resize_display(window: &tauri::Window, size: tauri::PhysicalSize<u32>) {
+    update_display_size(window, size, false);
+}
+
+pub fn redraw_display(window: &tauri::Window) {
+    if let Ok(size) = window.inner_size() {
+        update_display_size(window, size, true);
+    }
+}
+
+fn update_display_size(window: &tauri::Window, size: tauri::PhysicalSize<u32>, wait: bool) {
     let state = window.state::<AppState>();
     let Some(ctx) = state
         .gpu_context
@@ -427,9 +441,15 @@ pub fn resize_display(window: &tauri::Window, size: tauri::PhysicalSize<u32>) {
     let Some(display) = ctx.display_for_label(window.label()) else {
         return;
     };
-    if let Ok(mut lock) = display.try_lock()
-        && let Some(display) = lock.as_mut()
-    {
+    let mut lock = if wait {
+        display.lock().unwrap_or_else(|e| e.into_inner())
+    } else {
+        match display.try_lock() {
+            Ok(lock) => lock,
+            Err(_) => return,
+        }
+    };
+    if let Some(display) = lock.as_mut() {
         display.resize(&ctx.device, size);
         display.flush(&ctx.device, &ctx.queue);
     }

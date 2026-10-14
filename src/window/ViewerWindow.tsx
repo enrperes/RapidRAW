@@ -51,6 +51,23 @@ export default function ViewerWindow() {
   }, []);
 
   useEffect(() => {
+    if (!info?.native) return;
+    let frame: number | null = null;
+    const handleResize = () => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        invoke(Invokes.RedrawViewerWindow).catch(console.error);
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [info?.native]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'F11') {
         event.preventDefault();
