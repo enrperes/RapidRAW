@@ -308,6 +308,13 @@ export const useKeyboardShortcuts = ({
           s.ui.toggleFullScreen();
         },
       },
+      toggle_viewer_window: {
+        shouldFire: (s: any) => s.settings.osPlatform !== 'android',
+        execute: (e: any, s: any) => {
+          e.preventDefault();
+          s.ui.toggleViewerWindow();
+        },
+      },
       show_original: {
         shouldFire: (s: any) => s.ui.activeView === 'editor' && !!s.editor.selectedImage,
         execute: (e: any) => {

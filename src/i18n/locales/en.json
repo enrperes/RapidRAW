@@ -210,6 +210,7 @@
       "autoAdjust": "Auto Adjust Image",
       "autoLensCorrection": "Auto Lens Correction",
       "cancel": "Cancel",
+      "closeViewer": "Close second window",
       "colorLabel": "Color Label",
       "confirmReset": "Confirm Reset",
       "convertNegative": "Convert Negative",
@@ -225,6 +226,7 @@
       "mergeHdr": "Merge to HDR",
       "noLabel": "No Label",
       "noRating": "No Rating",
+      "openViewer": "Open in second window",
       "pasteAdjustments": "Paste Adjustments",
       "productivity": "Productivity",
       "rating": "Rating",
@@ -808,9 +810,11 @@
       "tooltips": {
         "aperture": "Aperture",
         "backToLibrary": "Back to Library",
+        "closeViewer": "Close second window",
         "focalLength": "Focal Length",
         "fullscreen": "Toggle Fullscreen (F)",
         "iso": "ISO",
+        "openViewer": "Open in second window",
         "redo": "Redo (Ctrl+Y) or History (Right-click)",
         "showEdited": "Show Edited (B)",
         "showOriginal": "Show Original (B)",
@@ -818,6 +822,10 @@
         "undo": "Undo (Ctrl+Z) or History (Right-click)"
       },
       "vc": "VC"
+    },
+    "viewer": {
+      "openFailed": "Could not open the second window: {{error}}",
+      "windowTitle": "RapidRAW Viewer"
     }
   },
   "export": {
@@ -1717,6 +1725,7 @@
         "toggle_presets": "Toggle Presets panel",
         "toggle_reject": "Toggle reject flag",
         "toggle_right_panel": "Toggle Right Panel",
+        "toggle_viewer_window": "Toggle second window",
         "undo": "Undo adjustment",
         "unflag": "Remove flag",
         "zoom_100": "Zoom to 100%",
