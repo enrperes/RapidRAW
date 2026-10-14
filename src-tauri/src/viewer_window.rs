@@ -4,7 +4,8 @@ use std::time::Duration;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, ipc::Response};
 
-use crate::{AppState, load_settings};
+use crate::gpu_processing::current_gpu_context;
+use crate::{AppState, ViewerState, load_settings};
 
 pub const VIEWER_LABEL: &str = "viewer";
 const RESIZE_SETTLE_DELAY: Duration = Duration::from_millis(100);
@@ -21,6 +22,10 @@ pub struct ViewerInfo {
     background: [f32; 4],
 }
 
+fn viewer_state(state: &AppState) -> std::sync::MutexGuard<'_, ViewerState> {
+    state.viewer.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 fn viewer_is_open(app_handle: &AppHandle) -> bool {
     app_handle.get_webview_window(VIEWER_LABEL).is_some()
 }
@@ -33,19 +38,14 @@ pub fn publish_viewer_frame(app_handle: &AppHandle, jpeg_bytes: &[u8]) {
     if !viewer_is_open(app_handle) {
         return;
     }
-    app_handle
-        .state::<AppState>()
-        .viewer
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .frame = Some(jpeg_bytes.to_vec());
+    viewer_state(&app_handle.state::<AppState>()).frame = Some(jpeg_bytes.to_vec());
     notify_viewer(app_handle);
 }
 
 pub fn set_viewer_background(app_handle: &AppHandle, color: [f32; 4]) {
     let state = app_handle.state::<AppState>();
     {
-        let mut viewer = state.viewer.lock().unwrap_or_else(|e| e.into_inner());
+        let mut viewer = viewer_state(&state);
         if viewer.background == color {
             return;
         }
@@ -54,12 +54,7 @@ pub fn set_viewer_background(app_handle: &AppHandle, color: [f32; 4]) {
     if !viewer_is_open(app_handle) {
         return;
     }
-    let context = state
-        .gpu_context
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .clone();
-    if let Some(ctx) = context
+    if let Some(ctx) = current_gpu_context(&state)
         && let Some(display) = ctx
             .viewer_display
             .lock()
@@ -87,13 +82,7 @@ pub fn handle_viewer_resized(window: &tauri::Window, size: tauri::PhysicalSize<u
 }
 
 fn release_viewer_display(app_handle: &AppHandle) {
-    let context = app_handle
-        .state::<AppState>()
-        .gpu_context
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .clone();
-    if let Some(ctx) = context {
+    if let Some(ctx) = current_gpu_context(&app_handle.state::<AppState>()) {
         ctx.viewer_display
             .lock()
             .unwrap_or_else(|e| e.into_inner())
@@ -115,12 +104,7 @@ pub fn close_viewer(app_handle: &AppHandle) {
 
 pub fn handle_viewer_destroyed(app_handle: &AppHandle) {
     release_viewer_display(app_handle);
-    app_handle
-        .state::<AppState>()
-        .viewer
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .frame = None;
+    viewer_state(&app_handle.state::<AppState>()).frame = None;
     let _ = app_handle.emit_to("main", "viewer-closed", ());
 }
 
@@ -215,13 +199,7 @@ fn attach_viewer_display(
     let size = window.inner_size().map_err(|e| e.to_string())?;
     let mut display =
         crate::gpu_processing::build_wgpu_display(surface, &ctx.adapter, &ctx.device, size, true)?;
-    display.set_background(
-        state
-            .viewer
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .background,
-    );
+    display.set_background(viewer_state(&state).background);
     display.flush(&ctx.device, &ctx.queue);
     *ctx.viewer_display.lock().unwrap_or_else(|e| e.into_inner()) = Some(display);
     Ok(())
@@ -296,23 +274,11 @@ pub fn get_viewer_info(app_handle: AppHandle, state: tauri::State<AppState>) -> 
         native: load_settings(app_handle)
             .unwrap_or_default()
             .wgpu_renderer_enabled(),
-        background: state
-            .viewer
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .background,
+        background: viewer_state(&state).background,
     }
 }
 
 #[tauri::command]
 pub fn get_viewer_frame(state: tauri::State<AppState>) -> Response {
-    Response::new(
-        state
-            .viewer
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .frame
-            .clone()
-            .unwrap_or_default(),
-    )
+    Response::new(viewer_state(&state).frame.clone().unwrap_or_default())
 }

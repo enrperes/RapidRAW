@@ -418,6 +418,14 @@ pub fn create_window_surface(
     rx.recv().map_err(|e| e.to_string())?
 }
 
+pub fn current_gpu_context(state: &AppState) -> Option<GpuContext> {
+    state
+        .gpu_context
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+}
+
 pub fn resize_display(window: &tauri::Window, size: tauri::PhysicalSize<u32>) {
     update_display_size(window, size, false);
 }
@@ -427,13 +435,7 @@ pub fn redraw_display(window: &tauri::Window, size: tauri::PhysicalSize<u32>) {
 }
 
 fn update_display_size(window: &tauri::Window, size: tauri::PhysicalSize<u32>, wait: bool) {
-    let state = window.state::<AppState>();
-    let Some(ctx) = state
-        .gpu_context
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .clone()
-    else {
+    let Some(ctx) = current_gpu_context(&window.state::<AppState>()) else {
         return;
     };
     let Some(display) = ctx.display_for_label(window.label()) else {
