@@ -1914,7 +1914,12 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(PinchZoomDisablePlugin)
         .on_window_event(|window, event| match event {
-            tauri::WindowEvent::Resized(size) => gpu_processing::resize_display(window, *size),
+            tauri::WindowEvent::Resized(size) => {
+                gpu_processing::resize_display(window, *size);
+                if window.label() == viewer_window::VIEWER_LABEL {
+                    viewer_window::handle_viewer_resized(window, *size);
+                }
+            }
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 viewer_window::handle_close_requested(window, api)
             }
@@ -2345,7 +2350,6 @@ pub fn run() {
             update_wgpu_transform,
             viewer_window::open_viewer_window,
             viewer_window::close_viewer_window,
-            viewer_window::redraw_viewer_window,
             viewer_window::get_viewer_info,
             viewer_window::get_viewer_frame,
             android_integration::resolve_android_content_uri_name,

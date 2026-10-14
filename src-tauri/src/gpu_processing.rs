@@ -422,10 +422,8 @@ pub fn resize_display(window: &tauri::Window, size: tauri::PhysicalSize<u32>) {
     update_display_size(window, size, false);
 }
 
-pub fn redraw_display(window: &tauri::Window) {
-    if let Ok(size) = window.inner_size() {
-        update_display_size(window, size, true);
-    }
+pub fn redraw_display(window: &tauri::Window, size: tauri::PhysicalSize<u32>) {
+    update_display_size(window, size, true);
 }
 
 fn update_display_size(window: &tauri::Window, size: tauri::PhysicalSize<u32>, wait: bool) {

@@ -1,9 +1,14 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
+
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, ipc::Response};
 
 use crate::{AppState, load_settings};
 
 pub const VIEWER_LABEL: &str = "viewer";
+const RESIZE_SETTLE_DELAY: Duration = Duration::from_millis(100);
+static RESIZE_GENERATION: AtomicU64 = AtomicU64::new(0);
 #[cfg(not(target_os = "android"))]
 const VIEWER_STATE_FILE: &str = "viewer_window_state.json";
 #[cfg(not(target_os = "android"))]
@@ -65,6 +70,20 @@ pub fn set_viewer_background(app_handle: &AppHandle, color: [f32; 4]) {
         display.flush(&ctx.device, &ctx.queue);
     }
     notify_viewer(app_handle);
+}
+
+pub fn handle_viewer_resized(window: &tauri::Window, size: tauri::PhysicalSize<u32>) {
+    let generation = RESIZE_GENERATION.fetch_add(1, Ordering::Relaxed) + 1;
+    let window = window.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(RESIZE_SETTLE_DELAY).await;
+        if RESIZE_GENERATION.load(Ordering::Relaxed) == generation {
+            let _ = tauri::async_runtime::spawn_blocking(move || {
+                crate::gpu_processing::redraw_display(&window, size)
+            })
+            .await;
+        }
+    });
 }
 
 fn release_viewer_display(app_handle: &AppHandle) {
@@ -267,13 +286,6 @@ pub async fn open_viewer_window(title: String, app_handle: AppHandle) -> Result<
 #[tauri::command]
 pub async fn close_viewer_window(app_handle: AppHandle) -> Result<(), String> {
     tokio::task::spawn_blocking(move || close_viewer(&app_handle))
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn redraw_viewer_window(window: tauri::Window) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || crate::gpu_processing::redraw_display(&window))
         .await
         .map_err(|e| e.to_string())
 }
