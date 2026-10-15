@@ -60,6 +60,7 @@ export const useKeyboardShortcuts = ({
       settings: useSettingsStore.getState(),
       process: useProcessStore.getState(),
     });
+    type StoreState = ReturnType<typeof getStoreState>;
 
     const comboMap = new Map<string, string>();
     const { appSettings, osPlatform } = useSettingsStore.getState();
@@ -306,6 +307,13 @@ export const useKeyboardShortcuts = ({
         execute: (e: any, s: any) => {
           e.preventDefault();
           s.ui.toggleFullScreen();
+        },
+      },
+      toggle_viewer_window: {
+        shouldFire: (s: StoreState) => s.settings.osPlatform !== 'android',
+        execute: (e: KeyboardEvent, s: StoreState) => {
+          e.preventDefault();
+          s.ui.toggleViewerWindow();
         },
       },
       show_original: {
